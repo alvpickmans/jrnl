@@ -11,6 +11,7 @@ EDITOR="${EDITOR:-vi}"
 MODE=""
 NOTE_TEXT=""
 INTERACTIVE=""
+OPEN_EDITOR=""
 
 show_help() {
     cat << EOF
@@ -18,7 +19,7 @@ jrnl - Simple Journal Command $VERSION
 
 USAGE:
     jrnl <note text>               # Quick add entry
-    jrnl -i <note text>            # Interactive add entry
+    jrnl -i [-e <editor>] <text>   # Interactive add entry
     jrnl read                      # Show entire journal (pipeable)
     jrnl open [-e <editor>]        # Open journal in editor
     jrnl -v, jrnl --version        # Show version
@@ -30,7 +31,7 @@ ENVIRONMENT:
 
 FLAGS:
     -i            Interactive mode (add detailed notes)
-    -e <editor>   Open command: use specified editor
+    -e <editor>   Use specified editor (for -i or open)
     -v, --version Show version
     -h, --help    Show this help message
 
@@ -40,6 +41,7 @@ EXAMPLES:
     jrnl Important meeting at 3pm
     jrnl TODO: review pull request
     jrnl -i Startup meeting
+    jrnl -i -e nano "Startup meeting"
     jrnl read | grep "meeting"
     jrnl read | less
     jrnl open
@@ -80,6 +82,7 @@ add_entry() {
 
 add_interactive_entry() {
     local title="$1"
+    local editor="${2:-$EDITOR}"
     local today=$(get_today_date)
     
     local temp_file
@@ -87,7 +90,7 @@ add_interactive_entry() {
     
     printf '%s %s\n' "$today" "$title" > "$temp_file"
     
-    "$EDITOR" "$temp_file"
+    "$editor" "$temp_file"
     
     if [ -s "$temp_file" ]; then
         local first_line
@@ -178,6 +181,14 @@ else
                 INTERACTIVE=1
                 shift
                 ;;
+            -e|--editor)
+                if [ $# -lt 2 ]; then
+                    echo "Error: -e|--editor requires an argument" >&2
+                    exit 1
+                fi
+                OPEN_EDITOR="$2"
+                shift 2
+                ;;
             *)
                 # Not a flag, start collecting note text
                 break
@@ -206,7 +217,7 @@ case "$MODE" in
     "")
         ensure_journal_file
         if [ -n "$INTERACTIVE" ]; then
-            add_interactive_entry "$NOTE_TEXT"
+            add_interactive_entry "$NOTE_TEXT" "$OPEN_EDITOR"
         else
             add_entry "$NOTE_TEXT"
         fi

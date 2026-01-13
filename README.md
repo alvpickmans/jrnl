@@ -32,6 +32,11 @@ Add an entry with detailed notes using your default editor:
 jrnl -i Startup meeting
 ```
 
+Specify a different editor:
+```bash
+jrnl -i -e nano "Startup meeting"
+```
+
 This will open your editor (defaults to `vi`, respects `$EDITOR`) with a `.jrnl` file for LSP support. The file will be pre-populated with the date and title header, allowing you to edit both the title and add indented notes below it.
 
 ### Open Journal

@@ -9,6 +9,7 @@ A bash command-line tool for quick note-taking with date-stamped entries.
 ```bash
 jrnl "note text"               # Quick add entry
 jrnl "note text" -i            # Interactive add entry
+jrnl "note text" -i -e <editor> Interactive with editor
 jrnl read                      # Show entire journal (pipeable)
 jrnl open [-e <editor>]        # Open journal in editor
 jrnl -h, jrnl --help           # Show usage
@@ -38,6 +39,7 @@ Opens an editor for additional entry context with LSP support.
 - Creates a temporary file with `.jrnl` extension for editor detection
 - Pre-populates temp file with `YYYY-MM-DD title` header
 - Opens `$EDITOR` (or `vi` as fallback) with temp file
+- Supports `-e <editor>` flag to specify alternative editor
 - Validates first line must be in `YYYY-MM-DD title` format
 - Writes header and tabbed content to journal if content exists
 - Removes temp file
@@ -133,6 +135,7 @@ jrnl "TODO: review pull request"
 
 # Interactive notes with context
 jrnl -i "Startup meeting"
+jrnl -i -e nano "Startup meeting"
 
 # Read and pipe
 jrnl read | grep "meeting"
