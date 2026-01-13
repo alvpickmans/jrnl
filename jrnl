@@ -2,7 +2,7 @@
 
 set -euo pipefail
 
-VERSION="v0.1.0"
+VERSION="v0.1.1"
 
 # Default values
 JRNL_FILE="${JRNL_FILE:-$HOME/main.jrnl}"
