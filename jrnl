@@ -2,9 +2,11 @@
 
 set -euo pipefail
 
+VERSION="v0.1.0"
+
 # Default values
-JOURNL_FILE="${JOURNL_FILE:-$HOME/main.jrnl}"
-FILE="$JOURNL_FILE"
+JRNL_FILE="${JRNL_FILE:-$HOME/main.jrnl}"
+FILE="$JRNL_FILE"
 EDITOR="${EDITOR:-vi}"
 MODE=""
 NOTE_TEXT=""
@@ -12,21 +14,23 @@ INTERACTIVE=""
 
 show_help() {
     cat << EOF
-jrnl - Simple Journal Command v0.0.1
+jrnl - Simple Journal Command $VERSION
 
 USAGE:
     jrnl <note text>               # Quick add entry
     jrnl -i <note text>            # Interactive add entry
     jrnl read                      # Show entire journal (pipeable)
+    jrnl open [-e <editor>]        # Open journal in editor
     jrnl -v, jrnl --version        # Show version
     jrnl -h, jrnl --help           # Show usage
 
 ENVIRONMENT:
-    JOURNL_FILE    Path to journal file (default: ~/main.jrnl)
+    JRNL_FILE      Path to journal file (default: ~/main.jrnl)
     EDITOR         Editor to use (default: vi)
 
 FLAGS:
     -i            Interactive mode (add detailed notes)
+    -e <editor>   Open command: use specified editor
     -v, --version Show version
     -h, --help    Show this help message
 
@@ -38,6 +42,8 @@ EXAMPLES:
     jrnl -i Startup meeting
     jrnl read | grep "meeting"
     jrnl read | less
+    jrnl open
+    jrnl open -e nano
 EOF
 }
 
@@ -77,20 +83,36 @@ add_interactive_entry() {
     local today=$(get_today_date)
     
     local temp_file
-    temp_file=$(mktemp)
+    temp_file=$(mktemp "${TMPDIR:-/tmp}/jrnl.XXXXXXXX.jrnl")
     
-    if [ -s "$FILE" ]; then
-        printf '\n' >> "$FILE"
-    fi
-    
-    printf '%s %s\n' "$today" "$title" >> "$FILE"
+    printf '%s %s\n' "$today" "$title" > "$temp_file"
     
     "$EDITOR" "$temp_file"
     
     if [ -s "$temp_file" ]; then
-        while IFS= read -r line || [ -n "$line" ]; do
-            printf '\t%s\n' "$line" >> "$FILE"
-        done < "$temp_file"
+        local first_line
+        first_line=$(head -n1 "$temp_file")
+        
+        if [[ ! "$first_line" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}[[:space:]] ]]; then
+            echo "Error: First line must be in 'YYYY-MM-DD title' format" >&2
+            rm -f "$temp_file"
+            exit 1
+        fi
+        
+        local remaining_lines
+        remaining_lines=$(tail -n +2 "$temp_file")
+        
+        if [ -n "$remaining_lines" ]; then
+            if [ -s "$FILE" ]; then
+                printf '\n' >> "$FILE"
+            fi
+            
+            printf '%s\n' "$first_line" >> "$FILE"
+            
+            while IFS= read -r line || [ -n "$line" ]; do
+                printf '\t%s\n' "$line" >> "$FILE"
+            done <<< "$remaining_lines"
+        fi
     fi
     
     rm -f "$temp_file"
@@ -99,6 +121,11 @@ add_interactive_entry() {
 read_journal() {
     ensure_journal_file
     cat "$FILE"
+}
+
+open_journal() {
+    ensure_journal_file
+    "$1" "$FILE"
 }
 
 # Parse arguments
@@ -112,6 +139,26 @@ fi
 if [ "$1" = "read" ]; then
     MODE="read"
     shift
+elif [ "$1" = "open" ]; then
+    MODE="open"
+    OPEN_EDITOR="$EDITOR"
+    shift
+    while [ $# -gt 0 ]; do
+        case "$1" in
+            -e|--editor)
+                if [ $# -lt 2 ]; then
+                    echo "Error: -e|--editor requires an argument" >&2
+                    exit 1
+                fi
+                OPEN_EDITOR="$2"
+                shift 2
+                ;;
+            *)
+                echo "Error: Unexpected argument '$1' for open command" >&2
+                exit 1
+                ;;
+        esac
+    done
 elif [ "$1" = "-h" ] || [ "$1" = "--help" ]; then
     show_help
     exit 0
@@ -120,7 +167,7 @@ else
     while [ $# -gt 0 ]; do
         case "$1" in
             -v|--version)
-                echo "jrnl v0.0.1"
+                echo "jrnl $VERSION"
                 exit 0
                 ;;
             -h|--help)
@@ -152,6 +199,9 @@ fi
 case "$MODE" in
     read)
         read_journal
+        ;;
+    open)
+        open_journal "$OPEN_EDITOR"
         ;;
     "")
         ensure_journal_file

@@ -10,6 +10,7 @@ A bash command-line tool for quick note-taking with date-stamped entries.
 jrnl "note text"               # Quick add entry
 jrnl "note text" -i            # Interactive add entry
 jrnl read                      # Show entire journal (pipeable)
+jrnl open [-e <editor>]        # Open journal in editor
 jrnl -h, jrnl --help           # Show usage
 jrnl -v, jrnl --version        # Show jrnl version
 ```
@@ -19,7 +20,7 @@ jrnl -v, jrnl --version        # Show jrnl version
 ## File Path Resolution
 
 Priority order:
-2. `$JOURNL_FILE` environment variable
+2. `$JRNL_FILE` environment variable
 3. Default: `~/main.jrnl`
 
 ## Commands
@@ -32,15 +33,25 @@ Appends a date-stamped entry to the journal.
 - Adds blank line separator if file is not empty
 
 ### Interactive Add Mode (`-i`)
-Opens an editor for additional entry context.
+Opens an editor for additional entry context with LSP support.
 
-- Creates a temporary file
+- Creates a temporary file with `.jrnl` extension for editor detection
+- Pre-populates temp file with `YYYY-MM-DD title` header
 - Opens `$EDITOR` (or `vi` as fallback) with temp file
-- Appends entry title as `YYYY-MM-DD title`
-- Reads temp file content and appends as tabbed lines
+- Validates first line must be in `YYYY-MM-DD title` format
+- Writes header and tabbed content to journal if content exists
 - Removes temp file
 
+**Error**: If first line is not in `YYYY-MM-DD title` format, prints error to stderr and exits.
+
 **Error**: If `jrnl` is called without any arguments, print help.
+
+### Open Mode
+Opens the journal file in an editor.
+
+- Ensures journal file exists
+- Uses `$EDITOR` environment variable (defaults to `vi`)
+- Supports `-e <editor>` flag to specify alternative editor
 
 ### Show Mode
 Outputs the entire journal file to stdout.

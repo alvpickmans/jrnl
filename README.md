@@ -32,7 +32,19 @@ Add an entry with detailed notes using your default editor:
 jrnl -i Startup meeting
 ```
 
-This will open your editor (defaults to `vi`, respects `$EDITOR`) where you can add multiple lines of notes.
+This will open your editor (defaults to `vi`, respects `$EDITOR`) with a `.jrnl` file for LSP support. The file will be pre-populated with the date and title header, allowing you to edit both the title and add indented notes below it.
+
+### Open Journal
+
+Open the journal file in your editor:
+```bash
+jrnl open
+```
+
+Specify a different editor:
+```bash
+jrnl open -e nano
+```
 
 ### Read Journal
 
@@ -68,12 +80,12 @@ jrnl --help
 
 ## Environment Variables
 
-- `JOURNL_FILE` - Path to the journal file (default: `~/main.jrnl`)
+- `JRNL_FILE` - Path to the journal file (default: `~/main.jrnl`)
 - `EDITOR` - Editor to use for interactive mode (default: `vi`)
 
 ### Example with custom journal file:
 ```bash
-export JOURNL_FILE=~/work.jrnl
+export JRNL_FILE=~/work.jrnl
 jrnl Team sync meeting
 ```
 
@@ -98,5 +110,6 @@ Example journal file:
 Flags must come BEFORE the note text.
 
 - `-i` - Interactive mode (opens editor for detailed notes)
+- `-e <editor>` - Open command: use specified editor
 - `-v, --version` - Show version
 - `-h, --help` - Show help message
