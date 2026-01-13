@@ -1,0 +1,164 @@
+#!/bin/bash
+
+set -euo pipefail
+
+# Default values
+JOURNL_FILE="${JOURNL_FILE:-$HOME/main.jrnl}"
+FILE="$JOURNL_FILE"
+EDITOR="${EDITOR:-vi}"
+MODE=""
+NOTE_TEXT=""
+INTERACTIVE=""
+
+show_help() {
+    cat << EOF
+jrnl - Simple Journal Command v0.0.1
+
+USAGE:
+    jrnl <note text>               # Quick add entry
+    jrnl -i <note text>            # Interactive add entry
+    jrnl read                      # Show entire journal (pipeable)
+    jrnl -v, jrnl --version        # Show version
+    jrnl -h, jrnl --help           # Show usage
+
+ENVIRONMENT:
+    JOURNL_FILE    Path to journal file (default: ~/main.jrnl)
+    EDITOR         Editor to use (default: vi)
+
+FLAGS:
+    -i            Interactive mode (add detailed notes)
+    -v, --version Show version
+    -h, --help    Show this help message
+
+NOTE: Flags must come BEFORE the note text
+
+EXAMPLES:
+    jrnl Important meeting at 3pm
+    jrnl TODO: review pull request
+    jrnl -i Startup meeting
+    jrnl read | grep "meeting"
+    jrnl read | less
+EOF
+}
+
+get_today_date() {
+    date +%Y-%m-%d
+}
+
+ensure_journal_file() {
+    if [ ! -f "$FILE" ]; then
+        local dir=$(dirname "$FILE")
+        if [ ! -d "$dir" ]; then
+            mkdir -p "$dir" 2>/dev/null || {
+                echo "Error: Cannot create directory $dir" >&2
+                exit 1
+            }
+        fi
+        touch "$FILE" 2>/dev/null || {
+            echo "Error: Cannot create file $FILE" >&2
+            exit 1
+        }
+    fi
+}
+
+add_entry() {
+    local text="$1"
+    local today=$(get_today_date)
+    
+    if [ -s "$FILE" ]; then
+        printf '\n' >> "$FILE"
+    fi
+    
+    echo "${today} ${text}" >> "$FILE"
+}
+
+add_interactive_entry() {
+    local title="$1"
+    local today=$(get_today_date)
+    
+    local temp_file
+    temp_file=$(mktemp)
+    
+    if [ -s "$FILE" ]; then
+        printf '\n' >> "$FILE"
+    fi
+    
+    printf '%s %s\n' "$today" "$title" >> "$FILE"
+    
+    "$EDITOR" "$temp_file"
+    
+    if [ -s "$temp_file" ]; then
+        while IFS= read -r line || [ -n "$line" ]; do
+            printf '\t%s\n' "$line" >> "$FILE"
+        done < "$temp_file"
+    fi
+    
+    rm -f "$temp_file"
+}
+
+read_journal() {
+    ensure_journal_file
+    cat "$FILE"
+}
+
+# Parse arguments
+if [ $# -eq 0 ]; then
+    echo "Error: jrnl requires arguments" >&2
+    show_help
+    exit 1
+fi
+
+# Check for commands or help first
+if [ "$1" = "read" ]; then
+    MODE="read"
+    shift
+elif [ "$1" = "-h" ] || [ "$1" = "--help" ]; then
+    show_help
+    exit 0
+else
+    # Collect flags first
+    while [ $# -gt 0 ]; do
+        case "$1" in
+            -v|--version)
+                echo "jrnl v0.0.1"
+                exit 0
+                ;;
+            -h|--help)
+                show_help
+                exit 0
+                ;;
+            -i)
+                INTERACTIVE=1
+                shift
+                ;;
+            *)
+                # Not a flag, start collecting note text
+                break
+                ;;
+        esac
+    done
+    
+    # Collect all remaining text as note text
+    NOTE_TEXT="$*"
+    
+    if [ -z "$NOTE_TEXT" ]; then
+        echo "Error: jrnl requires note text" >&2
+        show_help
+        exit 1
+    fi
+fi
+
+# Execute based on mode
+case "$MODE" in
+    read)
+        read_journal
+        ;;
+    "")
+        ensure_journal_file
+        if [ -n "$INTERACTIVE" ]; then
+            add_interactive_entry "$NOTE_TEXT"
+        else
+            add_entry "$NOTE_TEXT"
+        fi
+        ;;
+esac
