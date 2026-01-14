@@ -7,9 +7,8 @@ A bash command-line tool for quick note-taking with date-stamped entries.
 ## Command Interface
 
 ```bash
-jrnl "note text"               # Quick add entry
-jrnl "note text" -i            # Interactive add entry
-jrnl "note text" -i -e <editor> Interactive with editor
+jrnl "note text"               # Quick add entry (quoted string required)
+jrnl -i [-e <editor>] "text"   # Interactive add entry (quoted string required)
 jrnl read                      # Show entire journal (pipeable)
 jrnl open [-e <editor>]        # Open journal in editor
 jrnl -h, jrnl --help           # Show usage
@@ -17,6 +16,7 @@ jrnl -v, jrnl --version        # Show jrnl version
 ```
 
 **Important**: All commands require arguments. Running `jrnl` without arguments shows help.
+**Note text must be quoted** - single or double quotes. Multiple unquoted words will be rejected.
 
 ## File Path Resolution
 
@@ -30,8 +30,10 @@ Priority order:
 Appends a date-stamped entry to the journal.
 
 - Ensures journal file exists
+- Requires exactly one argument (text must be quoted if contains spaces)
 - Appends entry as `YYYY-MM-DD title`
 - Adds blank line separator if file is not empty
+- **Error**: Multiple unquoted words will be rejected
 
 ### Interactive Add Mode (`-i`)
 Opens an editor for additional entry context with LSP support.
@@ -41,7 +43,7 @@ Opens an editor for additional entry context with LSP support.
 - Opens `$EDITOR` (or `vi` as fallback) with temp file
 - Supports `-e <editor>` flag to specify alternative editor
 - Validates first line must be in `YYYY-MM-DD title` format
-- Writes header and tabbed content to journal if content exists
+- Writes header and content to journal as-is (preserves user's indentation)
 - Removes temp file
 
 **Error**: If first line is not in `YYYY-MM-DD title` format, prints error to stderr and exits.
@@ -77,7 +79,7 @@ YYYY-MM-DD Another entry
 
 ### Entry Separation Rules
 - Each entry starts with date and title on one line
-- Multi-line entries use tab indentation for continuation lines
+- Multi-line entries can include indentation (tabs are preserved as written)
 - Entries are separated by blank lines
 - Multiple consecutive entries can have the same date
 
@@ -109,10 +111,10 @@ YYYY-MM-DD Another entry
 
 **`add_interactive_entry(title)`**
 - Creates temporary file with `mktemp`
-- Appends title to journal: `YYYY-MM-DD ${title}\n`
+- Pre-populates temp file with `YYYY-MM-DD ${title}\n`
 - Opens editor with temp file
 - Reads temp file line by line
-- Appends each line to journal with tab prefix
+- Writes header and content to journal as-is (preserves user formatting)
 - Removes temp file
 
 **`show_journal()`**
@@ -125,13 +127,16 @@ YYYY-MM-DD Another entry
 |-----------|----------|
 | File creation failure | Print error to stderr, exit 1 |
 | Editor command not found | Fallback to `vi` |
+| Unquoted multiple words | Print error to stderr, exit 1 |
+| No arguments provided | Print error to stderr, show help, exit 1 |
 
 ## Usage Examples
 
 ```bash
-# Quick notes
-jrnl Important meeting at 3pm
-jrnl "TODO: review pull request"
+# Quick notes (text must be quoted)
+jrnl "Important meeting at 3pm"
+jrnl 'TODO: review pull request'
+jrnl Lunch
 
 # Interactive notes with context
 jrnl -i "Startup meeting"

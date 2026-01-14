@@ -20,16 +20,17 @@ Simple journal command-line tool.
 
 ### Quick Add Entry
 
-Add a simple journal entry:
+Add a simple journal entry (text must be quoted):
 ```bash
-jrnl Important meeting at 3pm
+jrnl "Important meeting at 3pm"
+jrnl 'TODO: review pull request'
 ```
 
 ### Interactive Add Entry
 
-Add an entry with detailed notes using your default editor:
+Add an entry with detailed notes using your default editor (text must be quoted):
 ```bash
-jrnl -i Startup meeting
+jrnl -i "Startup meeting"
 ```
 
 Specify a different editor:
@@ -91,7 +92,7 @@ jrnl --help
 ### Example with custom journal file:
 ```bash
 export JRNL_FILE=~/work.jrnl
-jrnl Team sync meeting
+jrnl "Team sync meeting"
 ```
 
 ## Journal Format

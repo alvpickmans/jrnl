@@ -18,8 +18,8 @@ show_help() {
 jrnl - Simple Journal Command $VERSION
 
 USAGE:
-    jrnl <note text>               # Quick add entry
-    jrnl -i [-e <editor>] <text>   # Interactive add entry
+    jrnl "<note text>"             # Quick add entry
+    jrnl -i [-e <editor>] "<text>" # Interactive add entry
     jrnl read                      # Show entire journal (pipeable)
     jrnl open [-e <editor>]        # Open journal in editor
     jrnl -v, jrnl --version        # Show version
@@ -35,12 +35,10 @@ FLAGS:
     -v, --version Show version
     -h, --help    Show this help message
 
-NOTE: Flags must come BEFORE the note text
-
 EXAMPLES:
-    jrnl Important meeting at 3pm
-    jrnl TODO: review pull request
-    jrnl -i Startup meeting
+    jrnl "Important meeting at 3pm"
+    jrnl 'TODO: review pull request'
+    jrnl -i "Startup meeting"
     jrnl -i -e nano "Startup meeting"
     jrnl read | grep "meeting"
     jrnl read | less
@@ -113,7 +111,7 @@ add_interactive_entry() {
             printf '%s\n' "$first_line" >> "$FILE"
             
             while IFS= read -r line || [ -n "$line" ]; do
-                printf '\t%s\n' "$line" >> "$FILE"
+                printf '%s\n' "$line" >> "$FILE"
             done <<< "$remaining_lines"
         fi
     fi
@@ -197,13 +195,20 @@ else
     done
     
     # Collect all remaining text as note text
-    NOTE_TEXT="$*"
-    
-    if [ -z "$NOTE_TEXT" ]; then
+    if [ $# -eq 0 ]; then
         echo "Error: jrnl requires note text" >&2
         show_help
         exit 1
     fi
+    
+    # Require exactly one argument (text must be quoted if it contains spaces)
+    if [ $# -gt 1 ]; then
+        echo "Error: Note text must be a single quoted string" >&2
+        echo "Usage: jrnl \"your note text\"" >&2
+        exit 1
+    fi
+    
+    NOTE_TEXT="$1"
 fi
 
 # Execute based on mode
