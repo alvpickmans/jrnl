@@ -6,15 +6,19 @@ Simple journal command-line tool.
 
 ## Installation
 
-1. Clone or download this repository
-2. Make the script executable:
-   ```bash
-   chmod +x jrnl
-   ```
-3. Optionally, move it to a directory in your PATH:
-   ```bash
-   mv jrnl /usr/local/bin/
-   ```
+```bash
+curl -fsSL https://raw.githubusercontent.com/alvpickmans/jrnl/refs/heads/main/install | bash
+```
+
+This will:
+- Download `jrnl` to `~/.jrnl/bin/`
+- Make it executable
+- Add it to your PATH in your shell config file
+
+After installation, restart your shell or source your config file:
+```bash
+source ~/.bashrc  # or ~/.zshrc
+```
 
 ## Usage
 
